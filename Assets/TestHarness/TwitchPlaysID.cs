@@ -40,10 +40,8 @@ public class TwitchPlaysID : MonoBehaviour
 	private static List<TwitchPlaysID> TwitchPlaysModules = new List<TwitchPlaysID>();
 
 	public bool Solvable { get { return BombModule != null; } }
-
 	public bool Solved;
 	public int StrikeCount;
-
 	public bool TimeSkippingAllowed { get { return GetBool(TwitchSkipTimeAllowedField) ?? false; } }
 
 	public string HelpMessage;
@@ -60,7 +58,7 @@ public class TwitchPlaysID : MonoBehaviour
 	public static bool AnarchyMode;
 	public static bool TimeMode;
 	public static bool ZenMode;
-
+	
 
 	private bool HandleStrike()
 	{
@@ -73,29 +71,31 @@ public class TwitchPlaysID : MonoBehaviour
 
 	private void StopEverything()
 	{
-		if (BombModule != null) {
+		if (BombModule != null)
+		{
 			BombModule.HandlePass();
 		}
 
-		if (NeedyModule != null) {
+		if (NeedyModule != null)
+		{
 			NeedyModule.HandlePass();
 			NeedyModule.OnNeedyActivation = null;
 			NeedyModule.OnNeedyDeactivation = null;
 			NeedyModule.OnTimerExpired = null;
 		}
 
-		foreach (MonoBehaviour monoBehaviour in Module.GetComponentsInChildren<MonoBehaviour>(true)) {
+		foreach (MonoBehaviour monoBehaviour in Module.GetComponentsInChildren<MonoBehaviour>(true))
+		{
 			monoBehaviour.StopAllCoroutines();
 		}
 	}
 
 	private bool HandlePass()
 	{
-		if (Solved)
-			return true;
+		if (Solved) return true;
 		Solved = true;
 		TimerModule.UpdateTimeModeTime(5, false);
-		if (!AnarchyMode)
+		if(!AnarchyMode)
 			UnviewCamera();
 		return true;
 	}
@@ -110,32 +110,41 @@ public class TwitchPlaysID : MonoBehaviour
 	}
 
 	private bool triedToSolve;
-
 	private IEnumerator ForceSolveModule()
 	{
-		if (!triedToSolve) {
+		if (!triedToSolve)
+		{
 			MethodInfo method = TwitchForcedSolveMethod;
 			Component component = TwitchCommandComponent;
 
 			triedToSolve = NeedyModule == null || TwitchForcedSolveMethod == null;
-			if (TwitchForcedSolveMethod == null) {
-				if (BombModule != null) {
+			if (TwitchForcedSolveMethod == null)
+			{
+				if (BombModule != null)
+				{
 					BombModule.HandlePass();
 				}
 
-				if (NeedyModule != null) {
+				if (NeedyModule != null)
+				{
 					NeedyModule.HandlePass();
 				}
-			} else {
+			}
+			else
+			{
 				string methodDeclaringTypeFullName = null;
 				if (method.DeclaringType != null)
 					methodDeclaringTypeFullName = method.DeclaringType.FullName;
 
-				if (method.ReturnType == typeof(IEnumerator)) {
+				if (method.ReturnType == typeof(IEnumerator))
+				{
 					IEnumerator responseCoroutine = null;
-					try {
-						responseCoroutine = (IEnumerator)method.Invoke(component, new object[] { });
-					} catch (System.Exception ex) {
+					try
+					{
+						responseCoroutine = (IEnumerator)method.Invoke(component, new object[] {  });
+					}
+					catch (System.Exception ex)
+					{
 						Debug.LogErrorFormat("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.", methodDeclaringTypeFullName, method.Name);
 						Debug.LogException(ex);
 						StopEverything();
@@ -145,10 +154,15 @@ public class TwitchPlaysID : MonoBehaviour
 					bool forceSolve;
 					while (responseCoroutine.TryMoveNext(out forceSolve, string.Format("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.", methodDeclaringTypeFullName, method.Name)) ?? false)
 						yield return responseCoroutine.Current;
-				} else {
-					try {
+				}
+				else
+				{
+					try
+					{
 						method.Invoke(component, new object[] { });
-					} catch (System.Exception ex) {
+					}
+					catch (System.Exception ex)
+					{
 						Debug.LogErrorFormat("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.", methodDeclaringTypeFullName, method.Name);
 						Debug.LogException(ex);
 						StopEverything();
@@ -157,13 +171,15 @@ public class TwitchPlaysID : MonoBehaviour
 				}
 			}
 			
-		} else {
+		}
+		else
+		{
 			StopEverything();
 		}
 
 		yield break;
 	}
-
+	
 	private void SolveModule()
 	{
 		TPCoroutineQueue.AddForcedSolve(ForceSolveModule());
@@ -171,9 +187,6 @@ public class TwitchPlaysID : MonoBehaviour
 
 	private void Start()
 	{
-		// TODO remove
-		return;
-
 		if (TPCoroutineQueue == null)
 			TPCoroutineQueue = new GameObject().AddComponent<TPCoroutineQueue>();
 
@@ -187,16 +200,18 @@ public class TwitchPlaysID : MonoBehaviour
 		
 		BombModule = Module.GetComponent<KMBombModule>();
 		NeedyModule = Module.GetComponent<KMNeedyModule>();
-		if (BombModule != null) {
+		if (BombModule != null)
+		{
 			BombModule.OnPass += HandlePass;
 			BombModule.OnStrike += HandleStrike;
-		} else if (NeedyModule != null) {
+		}
+		else if (NeedyModule != null)
+		{
 			NeedyModule.OnStrike += HandleStrike;
 		}
 
 		TwitchPlaysModules.Add(this);
-		if (_moduleCameras == null)
-			_moduleCameras = ModuleCameras;
+		if (_moduleCameras == null) _moduleCameras = ModuleCameras;
 	}
 
 	private void Update()
@@ -212,15 +227,20 @@ public class TwitchPlaysID : MonoBehaviour
 	{
 
 		var matches = Regex.Match(command, string.Format(@"!{0} (.+)", ModuleID));
-		if (matches.Success) {
+		if (matches.Success)
+		{
 			string internalCommand = matches.Groups[1].Value.ToLowerInvariant();
 
-			if (internalCommand.Equals("solve")) {
+			if (internalCommand.Equals("solve"))
+			{
 				SolveModule();
-			} else if (internalCommand.Equals("help") || internalCommand.Equals("manual")) {
+			}
+			else if (internalCommand.Equals("help") || internalCommand.Equals("manual"))
+			{
 				string helpMessage = GetString(TwitchHelpMessageField);
 				string manualCode = GetString(TwitchManualCodeField);
-				if (manualCode == null) {
+				if (manualCode == null)
+				{
 					if (BombModule != null)
 						manualCode = BombModule.ModuleDisplayName;
 					else if (NeedyModule != null)
@@ -235,25 +255,31 @@ public class TwitchPlaysID : MonoBehaviour
 					helpMessage += " | " + manualCode;
 
 				Debug.LogFormat(helpMessage, ModuleID);
-			} else {
+			}
+
+			else
+			{
 				string[] validCommands = GetStrings(TwitchValidCommandsField);
-				if (validCommands == null || validCommands.Length == 0 || validCommands.Any(x => Regex.IsMatch(matches.Groups[1].Value, x)))
+				if(validCommands == null || validCommands.Length == 0 || validCommands.Any(x => Regex.IsMatch(matches.Groups[1].Value, x)))
 					TPCoroutineQueue.AddToQueue(SimulateModule(matches.Groups[1].Value));
 			}
 		}
 
-		if (command.ToLowerInvariant().Equals("!solvebomb")) {
+		if (command.ToLowerInvariant().Equals("!solvebomb"))
+		{
 			SolveModule();
 		}
 	}
 
 	protected void SetBool(FieldInfo boolField, bool val)
 	{
-		if (boolField == null || TwitchCommandComponent == null || boolField.FieldType != typeof(bool))
-			return;
-		if (boolField.IsStatic) {
+		if (boolField == null || TwitchCommandComponent == null || boolField.FieldType != typeof(bool)) return;
+		if (boolField.IsStatic)
+		{
 			boolField.SetValue(null, val);
-		} else {
+		}
+		else
+		{
 			boolField.SetValue(TwitchCommandComponent, val);
 		}
 	}
@@ -261,18 +287,16 @@ public class TwitchPlaysID : MonoBehaviour
 	protected bool? GetBool(FieldInfo boolField)
 	{
 		bool result = boolField != null && TwitchCommandComponent != null && boolField.FieldType == typeof(bool);
-		if (!result)
-			return null;
+		if (!result) return null;
 		if (boolField.IsStatic)
-			return (bool)boolField.GetValue(null);
-		return (bool)boolField.GetValue(TwitchCommandComponent);
+			return (bool) boolField.GetValue(null);
+		return (bool) boolField.GetValue(TwitchCommandComponent);
 	}
 
 	protected string GetString(FieldInfo stringField)
 	{
 		bool result = stringField != null && TwitchCommandComponent != null && stringField.FieldType == typeof(string);
-		if (!result)
-			return null;
+		if (!result) return null;
 		if (stringField.IsStatic)
 			return (string)stringField.GetValue(null);
 		return (string)stringField.GetValue(TwitchCommandComponent);
@@ -281,8 +305,7 @@ public class TwitchPlaysID : MonoBehaviour
 	protected string[] GetStrings(FieldInfo stringField)
 	{
 		bool result = stringField != null && TwitchCommandComponent != null && stringField.FieldType == typeof(string[]);
-		if (!result)
-			return null;
+		if (!result) return null;
 		if (stringField.IsStatic)
 			return (string[])stringField.GetValue(null);
 		return (string[])stringField.GetValue(TwitchCommandComponent);
@@ -291,8 +314,7 @@ public class TwitchPlaysID : MonoBehaviour
 	protected int? GetInt(FieldInfo intField)
 	{
 		bool result = intField != null && TwitchCommandComponent != null && intField.FieldType == typeof(int);
-		if (!result)
-			return null;
+		if (!result) return null;
 		if (intField.IsStatic)
 			return (int)intField.GetValue(null);
 		return (int)intField.GetValue(TwitchCommandComponent);
@@ -300,15 +322,14 @@ public class TwitchPlaysID : MonoBehaviour
 
 	protected void FindTwitchCommandMethod()
 	{
-		if (Module == null)
-			return;
+		if (Module == null) return;
 		Component[] allComponents = Module.gameObject.GetComponentsInChildren<Component>(true);
-		foreach (Component component in allComponents) {
+		foreach (Component component in allComponents)
+		{
 			System.Type type = component.GetType();
 			MethodInfo method = type.GetMethod("ProcessTwitchCommand", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			MethodInfo forceSolveMethod = type.GetMethod("TwitchHandleForcedSolve", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-			if (method == null && forceSolveMethod == null)
-				continue;
+			if (method == null && forceSolveMethod == null) continue;
 
 			TwitchCommandComponent = component;
 			ProcessTwitchCommandMethod = method;
@@ -344,7 +365,8 @@ public class TwitchPlaysID : MonoBehaviour
 
 	protected void DoInteractionEnd(KMSelectable interactable)
 	{
-		if (interactable.OnInteractEnded != null) {
+		if (interactable.OnInteractEnded != null)
+		{
 			interactable.OnInteractEnded();
 		}
 	}
@@ -353,20 +375,18 @@ public class TwitchPlaysID : MonoBehaviour
 	private bool _zoomed;
 	private Rect _originalCameraRect;
 	private readonly Rect _zoomCameraLocation = new Rect(0.2738095f, 0.12f, 0.452381f, 0.76f);
-
 	public IEnumerator ZoomCamera(float duration = 1.0f)
 	{
-		if (_moduleCamera == null)
-			yield break;
+		if (_moduleCamera == null) yield break;
 		var cameraInstance = _moduleCamera.GetComponentInChildren<Camera>();
-		if (cameraInstance == null)
-			yield break;
+		if (cameraInstance == null) yield break;
 		_zoomed = true;
 		_originalCameraRect = cameraInstance.rect;
 		cameraInstance.depth = 100;
 		yield return null;
 		float initialTime = Time.time;
-		while ((Time.time - initialTime) < duration) {
+		while ((Time.time - initialTime) < duration)
+		{
 			float lerp = (Time.time - initialTime) / duration;
 			cameraInstance.rect = new Rect(Mathf.Lerp(_originalCameraRect.x, _zoomCameraLocation.x, lerp),
 				Mathf.Lerp(_originalCameraRect.y, _zoomCameraLocation.y, lerp),
@@ -380,14 +400,13 @@ public class TwitchPlaysID : MonoBehaviour
 
 	public IEnumerator UnZoomCamera(float duration = 1.0f)
 	{
-		if (_moduleCamera == null)
-			yield break;
-		if (!_zoomed)
-			yield break;
+		if (_moduleCamera == null) yield break;
+		if (!_zoomed) yield break;
 		var cameraInstance = _moduleCamera.GetComponentInChildren<Camera>();
 		yield return null;
 		float initialTime = Time.time;
-		while ((Time.time - initialTime) < duration) {
+		while ((Time.time - initialTime) < duration)
+		{
 			float lerp = (Time.time - initialTime) / duration;
 			cameraInstance.rect = new Rect(Mathf.Lerp(_zoomCameraLocation.x, _originalCameraRect.x, lerp),
 				Mathf.Lerp(_zoomCameraLocation.y, _originalCameraRect.y, lerp),
@@ -402,8 +421,7 @@ public class TwitchPlaysID : MonoBehaviour
 
 	private void UnviewCamera()
 	{
-		if (_moduleCamera == null)
-			return;
+		if (_moduleCamera == null) return;
 		_moduleCamerasInUse.Remove(_moduleCamera);
 		_moduleCameras.Add(_moduleCamera);
 		_moduleCamera.gameObject.SetActive(false);
@@ -412,18 +430,22 @@ public class TwitchPlaysID : MonoBehaviour
 
 	private void AttachCameraToModule()
 	{
-		if (_moduleCamera != null)
-			return;
+		if (_moduleCamera != null) return;
 		Transform t;
-		if (_moduleCameras.Any()) {
+		if (_moduleCameras.Any())
+		{
 			t = _moduleCameras[0];
 			_moduleCameras.Remove(t);
 			_moduleCamerasInUse.Add(t);
-		} else if (_moduleCamerasInUse.Any()) {
+		}
+		else if (_moduleCamerasInUse.Any())
+		{
 			t = _moduleCamerasInUse[0];
 			_moduleCamerasInUse.Remove(t);
 			_moduleCamerasInUse.Add(t); //Put the camera to back of the line.
-		} else {
+		}
+		else
+		{
 			Debug.Log("There are no available cameras to attach to the module");
 			return;
 		}
@@ -434,15 +456,13 @@ public class TwitchPlaysID : MonoBehaviour
 		t.gameObject.SetActive(true);
 
 		var module = TwitchPlaysModules.FirstOrDefault(x => x._moduleCamera == t);
-		if (module != null)
-			module._moduleCamera = null;
+		if (module != null) module._moduleCamera = null;
 		_moduleCamera = t;
 
-		if (BombModule != null)
-			t.SetParent(BombModule.transform, false);
-		else if (NeedyModule != null)
-			t.SetParent(NeedyModule.transform, false);
-		else {
+		if (BombModule != null) t.SetParent(BombModule.transform, false);
+		else if (NeedyModule != null) t.SetParent(NeedyModule.transform, false);
+		else
+		{
 			Debug.Log("This should never happen, but apparently this TwitchPlays instance was spawned without a bomb module nor a needy module");
 			t.gameObject.SetActive(false);
 			_moduleCamerasInUse.Remove(t);
@@ -454,23 +474,27 @@ public class TwitchPlaysID : MonoBehaviour
 
 	private bool _responded;
 	private bool _zoom;
-
 	private IEnumerator RespondToCommandCommon(string inputCommand)
 	{
 		_zoom = false;
 		_responded = false;
 		inputCommand = inputCommand.Trim();
-		if (inputCommand.Equals("unview", StringComparison.InvariantCultureIgnoreCase)) {
+		if (inputCommand.Equals("unview", StringComparison.InvariantCultureIgnoreCase))
+		{
 			_responded = true;
 			UnviewCamera();
-		} else {
-			if (inputCommand.StartsWith("view", StringComparison.InvariantCultureIgnoreCase)) {
+		}
+		else
+		{
+			if (inputCommand.StartsWith("view", StringComparison.InvariantCultureIgnoreCase))
+			{
 				_responded = true;
 			}
 			AttachCameraToModule();
 
 			Match match;
-			if (inputCommand.RegexMatch(out match, "^zoom(?: ([0-9]+(?:\\.[0-9])?))?$")) {
+			if (inputCommand.RegexMatch(out match, "^zoom(?: ([0-9]+(?:\\.[0-9])?))?$"))
+			{
 				float delay;
 				if (match.Groups.Count == 1 || !float.TryParse(match.Groups[1].Value, out delay))
 					delay = 2;
@@ -486,10 +510,13 @@ public class TwitchPlaysID : MonoBehaviour
 				_zoom = true;
 		}
 
-		if (inputCommand.Equals("show", StringComparison.InvariantCultureIgnoreCase)) {
+		if (inputCommand.Equals("show", StringComparison.InvariantCultureIgnoreCase))
+		{
 			yield return "show";
 			yield return null;
-		} else if (inputCommand.Equals("solve")) {
+		}
+		else if (inputCommand.Equals("solve"))
+		{
 			SolveModule();
 			_responded = true;
 		}
@@ -497,8 +524,7 @@ public class TwitchPlaysID : MonoBehaviour
 
 	IEnumerator RespondToCommandInternalSimple(string command)
 	{
-		if (ProcessTwitchCommandMethod == null)
-			yield break;
+		if (ProcessTwitchCommandMethod == null) yield break;
 		MethodInfo method = ProcessTwitchCommandMethod;
 		Component component = TwitchCommandComponent;
 
@@ -507,14 +533,18 @@ public class TwitchPlaysID : MonoBehaviour
 			methodDeclaringTypeFullName = method.DeclaringType.FullName;
 
 		IEnumerable<KMSelectable> selectableSequence = null;
-		try {
+		try
+		{
 			selectableSequence = (IEnumerable<KMSelectable>)method.Invoke(component, new object[] { command });
-			if (selectableSequence == null) {
+			if (selectableSequence == null)
+			{
 				_responded = true;
 				Debug.LogFormat("Twitch Plays handler {0}.{1} reports invalid command (by returning null).", methodDeclaringTypeFullName, method.Name);
 				yield break;
 			}
-		} catch (System.Exception ex) {
+		}
+		catch (System.Exception ex)
+		{
 			_responded = true;
 			Debug.LogErrorFormat("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.", methodDeclaringTypeFullName, method.Name);
 			Debug.LogException(ex);
@@ -528,8 +558,7 @@ public class TwitchPlaysID : MonoBehaviour
 
 	IEnumerator RespondToCommandInternalComplex(string command)
 	{
-		if (ProcessTwitchCommandMethod == null)
-			yield break;
+		if (ProcessTwitchCommandMethod == null) yield break;
 		MethodInfo method = ProcessTwitchCommandMethod;
 		Component component = TwitchCommandComponent;
 
@@ -538,16 +567,20 @@ public class TwitchPlaysID : MonoBehaviour
 			methodDeclaringTypeFullName = method.DeclaringType.FullName;
 
 		IEnumerator responseCoroutine = null;
-		try {
+		try
+		{
 			responseCoroutine = (IEnumerator)method.Invoke(component, new object[] { command });
-		} catch (System.Exception ex) {
+		}
+		catch (System.Exception ex)
+		{
 			_responded = true;
 			Debug.LogErrorFormat("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.", methodDeclaringTypeFullName, method.Name);
 			Debug.LogException(ex);
 			yield break;
 		}
 
-		if (responseCoroutine == null) {
+		if (responseCoroutine == null)
+		{
 			_responded = true;
 			Debug.LogFormat("Twitch Plays handler {0}.{1} reports invalid command (by returning null).", methodDeclaringTypeFullName, method.Name);
 			yield break;
@@ -559,8 +592,7 @@ public class TwitchPlaysID : MonoBehaviour
 
 	IEnumerator RespondToTwitchCommand(string command)
 	{
-		if (ProcessTwitchCommandMethod == null)
-			return null;
+		if (ProcessTwitchCommandMethod == null) return null;
 		if (typeof(IEnumerable<KMSelectable>).IsAssignableFrom(ProcessTwitchCommandMethod.ReturnType))
 			return RespondToCommandInternalSimple(command);
 		if (ProcessTwitchCommandMethod.ReturnType == typeof(IEnumerator))
@@ -569,11 +601,10 @@ public class TwitchPlaysID : MonoBehaviour
 	}
 
 	static readonly Dictionary<Component, HashSet<KMSelectable>> ComponentHelds = new Dictionary<Component, HashSet<KMSelectable>> { };
-
+	
 	IEnumerator SimulateModule(string command)
 	{
-		if (Solved && !AnarchyMode)
-			yield break;
+		if (Solved && !AnarchyMode) yield break;
 
 		needQuaternionReset = false;
 		frontFace = _heldFrontFace;
@@ -595,11 +626,10 @@ public class TwitchPlaysID : MonoBehaviour
 		HashSet<KMSelectable> heldSelectables = ComponentHelds[component];
 
 		bool? moved = responseCoroutine.MoveNext();
-		if (!(moved ?? false)) {
-			if (_responded)
-				yield break;
-			if (ProcessTwitchCommandMethod == null)
-				yield break;
+		if (!(moved ?? false))
+		{
+			if (_responded) yield break;
+			if (ProcessTwitchCommandMethod == null) yield break;
 
 			if (command.StartsWith("zoom ", StringComparison.InvariantCultureIgnoreCase))
 				command = command.Substring(4).Trim();
@@ -609,7 +639,8 @@ public class TwitchPlaysID : MonoBehaviour
 				methodDeclaringTypeFullName = ProcessTwitchCommandMethod.DeclaringType.FullName;
 			methodName = ProcessTwitchCommandMethod.Name;
 
-			if (responseCoroutine == null) {
+			if (responseCoroutine == null)
+			{
 				Debug.LogFormat("Twitch Plays handler {0}.{1} reports invalid command (by returning null).",
 					methodDeclaringTypeFullName, methodName);
 				yield break;
@@ -618,17 +649,21 @@ public class TwitchPlaysID : MonoBehaviour
 			moved = responseCoroutine.TryMoveNext(out forceSolve,
 				string.Format("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.",
 					methodDeclaringTypeFullName, methodName));
-			if (forceSolve) {
+			if (forceSolve)
+			{
 				Debug.LogFormat("There was a problem with the solver. Force-solving module");
 				SolveModule();
 				yield break;
 			}
 
-			if (moved.HasValue && !moved.Value) {
+			if (moved.HasValue && !moved.Value)
+			{
 				Debug.LogFormat("Twitch Plays handler {0}.{1} reports invalid command (by returning empty sequence).",
 					methodDeclaringTypeFullName, methodName);
 				yield break;
-			} else if (!moved.HasValue) {
+			}
+			else if (!moved.HasValue)
+			{
 				yield break;
 			}
 
@@ -643,7 +678,8 @@ public class TwitchPlaysID : MonoBehaviour
 		yield return new WaitForSeconds(0.5f);
 		focused = true;
 
-		if (_zoom) {
+		if (_zoom)
+		{
 			focus = ZoomCamera();
 			while (focus.MoveNext())
 				yield return focus.Current;
@@ -654,10 +690,12 @@ public class TwitchPlaysID : MonoBehaviour
 		bool tryCancelSequence = false;
 		bool multipleStrikes = false;
 
-		while (true) {
+		while (true)
+		{
 			moved = responseCoroutine.TryMoveNext(out forceSolve,
 				string.Format("An exception occurred while trying to invoke {0}.{1}; the command invokation will not continue.", methodDeclaringTypeFullName, methodName));
-			if (forceSolve) {
+			if (forceSolve)
+			{
 				Debug.LogFormat("There was a problem with the solver. Force-solving module");
 				SolveModule();
 				yield break;
@@ -669,23 +707,31 @@ public class TwitchPlaysID : MonoBehaviour
 			SetBool(TwitchCancelField, Canceller.ShouldCancel);
 
 			object currentObject = responseCoroutine.Current;
-			if (currentObject is KMSelectable) {
-				KMSelectable selectable = (KMSelectable)currentObject;
-				if (heldSelectables.Contains(selectable)) {
+			if (currentObject is KMSelectable)
+			{
+				KMSelectable selectable = (KMSelectable) currentObject;
+				if (heldSelectables.Contains(selectable))
+				{
 					DoInteractionEnd(selectable);
 					heldSelectables.Remove(selectable);
 					if ((StrikeCount != initialStrikes || Solved) && !AnarchyMode && !multipleStrikes)
 						break;
-				} else {
+				}
+				else
+				{
 					DoInteractionStart(selectable);
 					heldSelectables.Add(selectable);
 				}
-			} else if (currentObject is IEnumerable<KMSelectable>) {
-				foreach (var selectable in (IEnumerable<KMSelectable>) currentObject) {
+			}
+			else if (currentObject is IEnumerable<KMSelectable>)
+			{
+				foreach (var selectable in (IEnumerable<KMSelectable>) currentObject)
+				{
 					DoInteractionStart(selectable);
 					yield return new WaitForSeconds(.1f);
 					DoInteractionEnd(selectable);
-					if (tryCancelSequence && Canceller.ShouldCancel) {
+					if (tryCancelSequence && Canceller.ShouldCancel)
+					{
 						Canceller.ResetCancel();
 						break;
 					}
@@ -694,24 +740,35 @@ public class TwitchPlaysID : MonoBehaviour
 						break;
 
 				}
-			} else if (currentObject is string) {
-				string currentString = (string)currentObject;
+			}
+			else if (currentObject is string)
+			{
+				string currentString = (string) currentObject;
 				float waitTime;
-				int pointsAwarded;
 				Match match;
 
-				if (currentString.Equals("strike", StringComparison.InvariantCultureIgnoreCase)) {
+				if (currentString.Equals("strike", StringComparison.InvariantCultureIgnoreCase))
+				{
 					Debug.Log("Module has declared that a strike is pending, and might not happen while it is in focus");
-				} else if (currentString.Equals("solve", StringComparison.InvariantCultureIgnoreCase)) {
+				}
+				else if (currentString.Equals("solve", StringComparison.InvariantCultureIgnoreCase))
+				{
 					Debug.Log("Module has declared that a solve is pending, and might not happen while it is in focus");
-				} else if (currentString.Equals("unsubmittablepenalty", StringComparison.InvariantCultureIgnoreCase)) {
+				}
+				else if (currentString.Equals("unsubmittablepenalty", StringComparison.InvariantCultureIgnoreCase))
+				{
 					Debug.LogFormat("The answer that was submitted to module ID {0} ({1}) could not be submitted.", IDTextMesh.text,
 						GetModuleDisplayName());
-				} else if (currentString.Equals("parseerror")) {
+				}
+				else if (currentString.Equals("parseerror"))
+				{
 					Debug.LogFormat("Bad command");
 					break;
-				} else if (currentString.RegexMatch(out match, "^trycancel((?: (?:.|\\n)+)?)$")) {
-					if (Canceller.ShouldCancel) {
+				}
+				else if (currentString.RegexMatch(out match, "^trycancel((?: (?:.|\\n)+)?)$"))
+				{
+					if (Canceller.ShouldCancel)
+					{
 						Canceller.ResetCancel();
 						Debug.Log("Twitch handler sent: " + currentString);
 						break;
@@ -719,47 +776,68 @@ public class TwitchPlaysID : MonoBehaviour
 
 					yield return null;
 					continue;
-				} else if (currentString.RegexMatch(out match, "^trycancelsequence((?: (?:.|\\n)+)?)$")) {
+				}
+				else if (currentString.RegexMatch(out match, "^trycancelsequence((?: (?:.|\\n)+)?)$"))
+				{
 					tryCancelSequence = true;
 					yield return currentObject;
 					continue;
 				}
 
 				if (currentString.RegexMatch(out match, "^trywaitcancel ([0-9]+(?:\\.[0-9])?)((?: (?:.|\\n)+)?)$") &&
-				    float.TryParse(match.Groups[1].Value, out waitTime)) {
+				    float.TryParse(match.Groups[1].Value, out waitTime))
+				{
 					yield return new WaitForSecondsWithCancel(waitTime, false, this);
-					if (Canceller.ShouldCancel) {
+					if (Canceller.ShouldCancel)
+					{
 						Canceller.ResetCancel();
 						Debug.Log("Twitch handler sent: " + currentString);
 						break;
 					}
-				} else if (SendToTwitchChat(currentString, "[USER_NICK_NAME_HERE]") != SendToTwitchChatResponse.NotHandled) {
-					if (AntiTrollMode && !AnarchyMode)
-						break;
+				}
+				else if (SendToTwitchChat(currentString, "[USER_NICK_NAME_HERE]") != SendToTwitchChatResponse.NotHandled)
+				{
+					if (AntiTrollMode && !AnarchyMode) break;
 					yield return null;
 					continue;
-				} else if (currentString.StartsWith("add strike", StringComparison.InvariantCultureIgnoreCase)) {
+				}
+				else if (currentString.StartsWith("add strike", StringComparison.InvariantCultureIgnoreCase))
+				{
 					HandleStrike();
-				} else if (currentString.Equals("multiple strikes")) {
+				}
+				else if (currentString.Equals("multiple strikes"))
+				{
 					multipleStrikes = true;
-				} else if (currentString.Equals("end multiple strikes")) {
+				}
+				else if (currentString.Equals("end multiple strikes"))
+				{
 					multipleStrikes = false;
 					if ((StrikeCount != initialStrikes || Solved) && !AnarchyMode)
 						break;
-				} else if (currentString.Equals("autosolve")) {
+				}
+				else if (currentString.Equals("autosolve"))
+				{
 					SolveModule();
 					break;
-				} else if (currentString.RegexMatch(out match, "^(?:detonate|explode)(?: ([0-9.]+))?(?: ((?:.|\\n)+))?$")) {
-					if (!float.TryParse(match.Groups[1].Value, out waitTime)) {
-						if (string.IsNullOrEmpty(match.Groups[1].Value)) {
+				}
+				else if (currentString.RegexMatch(out match, "^(?:detonate|explode)(?: ([0-9.]+))?(?: ((?:.|\\n)+))?$"))
+				{
+					if (!float.TryParse(match.Groups[1].Value, out waitTime))
+					{
+						if (string.IsNullOrEmpty(match.Groups[1].Value))
+						{
 							Debug.LogFormat("Immediate explosion reqeusted by module's twitch handler");
 							waitTime = 0.1f;
-						} else {
+						}
+						else
+						{
 							Debug.Log("Badly formatted detonate command string: " + currentObject);
 							yield return currentObject;
 							continue;
 						}
-					} else {
+					}
+					else
+					{
 						Debug.LogFormat("Delayed explosion reqeusted by module's twitch handler. The bomb will explode in {0} seconds",
 							match.Groups[1].Value);
 					}
@@ -768,86 +846,116 @@ public class TwitchPlaysID : MonoBehaviour
 					if (_delayedExplosionCoroutine != null)
 						StopCoroutine(_delayedExplosionCoroutine);
 					_delayedExplosionCoroutine = StartCoroutine(DelayedModuleBombExplosion(waitTime, match.Groups[2].Value));
-				} else if (currentString.RegexMatch(out match, "^cancel (detonate|explode|detonation|explosion)$")) {
+				}
+				else if (currentString.RegexMatch(out match, "^cancel (detonate|explode|detonation|explosion)$"))
+				{
 					_delayedExplosionPending = false;
 					Debug.LogFormat("Delayed explosion cancelled.");
 					if (_delayedExplosionCoroutine != null)
 						StopCoroutine(_delayedExplosionCoroutine);
-				} else if (currentString.RegexMatch(out match, "^(end |toggle )?(?:elevator|hold|waiting) music$")) {
+				}
+				else if (currentString.RegexMatch(out match, "^(end |toggle )?(?:elevator|hold|waiting) music$"))
+				{
 					Debug.Log("Twitch handler sent: " + currentObject);
-					if (match.Groups.Count > 1 && _elevatorMusicStarted) {
+					if (match.Groups.Count > 1 && _elevatorMusicStarted)
+					{
 						_elevatorMusicStarted = false;
 						Debug.LogFormat("Stopping Elevator music");
-					} else if (!currentString.StartsWith("end ", StringComparison.InvariantCultureIgnoreCase) && !_elevatorMusicStarted) {
+					}
+					else if (!currentString.StartsWith("end ", StringComparison.InvariantCultureIgnoreCase) && !_elevatorMusicStarted)
+					{
 						Debug.LogFormat("Starting Elevator music");
 					}
-				} else if (currentString.ToLowerInvariant().Equals("hide camera")) {
+				}
+				else if (currentString.ToLowerInvariant().Equals("hide camera"))
+				{
 					Debug.Log("Hiding of camera / HUD requested");
-				} else if (currentString.Equals("cancelled") && Canceller.ShouldCancel) {
+				}
+				else if (currentString.Equals("cancelled") && Canceller.ShouldCancel)
+				{
 					Canceller.ResetCancel();
 					SetBool(TwitchCancelField, false);
 					break;
-				} else if (currentString.RegexMatch(out match, "^(?:skiptime|settime) ([0-9:.]+)") &&
-				         match.Groups[1].Value.TryParseTime(out waitTime)) {
+				}
+				else if (currentString.RegexMatch(out match, "^(?:skiptime|settime) ([0-9:.]+)") &&
+				         match.Groups[1].Value.TryParseTime(out waitTime))
+				{
 					Debug.LogFormat("Time skipping requested");
 
 
 
 					var skipDenied = TwitchPlaysModules.Where(x => x.Solvable && !x.TimeSkippingAllowed && !x.Solved).ToList();
 
-					if (!skipDenied.Any()) {
+					if (!skipDenied.Any())
+					{
 						if ((ZenMode && TimerModule.TimeRemaining < waitTime) ||
-						    (!ZenMode && TimerModule.TimeRemaining > waitTime)) {
+						    (!ZenMode && TimerModule.TimeRemaining > waitTime))
+						{
 							TimerModule.TimeRemaining = waitTime;
 							Debug.LogFormat("Skipping of time was allowed. Bomb Timer is now {0}", TimerModule.GetFormattedTime());
-						} else {
+						}
+						else
+						{
 							Debug.LogFormat("Skipping of time was not allowed because the requested time to skip to has already gone by.");
 						}
-					} else {
+					}
+					else
+					{
 						Debug.LogFormat(
 							"Skipping of time was not allowed, because there is at least one unsolved module that doesn't allow skipping of time present:");
 						Debug.LogFormat(skipDenied
 							.Select(x => string.Format("!{0} - ({1})", x.IDTextMesh.text, x.BombModule.ModuleDisplayName)).Join("\n"));
 					}
-				} else if (currentString.RegexMatch(out match, @"^awardpoints (-?\d+)$") && int.TryParse(match.Groups[1].Value, out pointsAwarded)) {
-					Debug.LogFormat("Awarded {0} {1}.", pointsAwarded, pointsAwarded == 1 ? "point" : "points");
-				} else {
+				}
+
+				else
+				{
 					Debug.Log("Unprocessed string: " + currentObject);
 				}
 
 				yield return currentObject;
-			} else if (currentObject is string[]) {
-				string[] currentStrings = (string[])currentObject;
-				if (currentStrings.Length >= 1) {
-					if (new[] { "detonate", "explode" }.Contains(currentStrings[0].ToLowerInvariant())) {
+			}
+			else if (currentObject is string[])
+			{
+				string[] currentStrings = (string[]) currentObject;
+				if (currentStrings.Length >= 1)
+				{
+					if (new[] {"detonate", "explode"}.Contains(currentStrings[0].ToLowerInvariant()))
+					{
 						FakeBombInfo.strikes = FakeBombInfo.numStrikes - 1;
 						string moduleDisplayName = GetModuleDisplayName() ?? "Detonate Command in TP Module";
-						switch (currentStrings.Length) {
-						case 3:
-							moduleDisplayName = currentStrings[2];
-							goto case 2;
+						switch (currentStrings.Length)
+						{
+							case 3:
+								moduleDisplayName = currentStrings[2];
+								goto case 2;
 
-						case 2:
-							Debug.Log("Detonate command chat message: " + currentStrings[1]);
-							goto default;
+							case 2:
+								Debug.Log("Detonate command chat message: " + currentStrings[1]);
+								goto default;
 
-						default:
-							FakeBombInfo.HandleStrike(moduleDisplayName);
-							break;
+							default:
+								FakeBombInfo.HandleStrike(moduleDisplayName);
+								break;
 						}
 					}
 				}
-			} else if (currentObject is Quaternion) {
-				RotateBombByLocalQuaternion((Quaternion)currentObject);
-			} else if (currentObject is Quaternion[]) {
-				Quaternion[] localQuaternions = (Quaternion[])currentObject;
-				if (localQuaternions.Length == 2) {
+			}
+			else if (currentObject is Quaternion)
+			{
+				RotateBombByLocalQuaternion((Quaternion) currentObject);
+			}
+			else if (currentObject is Quaternion[])
+			{
+				Quaternion[] localQuaternions = (Quaternion[]) currentObject;
+				if (localQuaternions.Length == 2)
+				{
 					//Module.parent.parent.localRotation = localQuaternions[0];
 					RotateBombByLocalQuaternion(localQuaternions[0]);
-					if (_moduleCamera != null)
-						_moduleCamera.localRotation = Quaternion.Euler(frontFace ? -localQuaternions[1].eulerAngles : localQuaternions[1].eulerAngles);
+					if (_moduleCamera != null) _moduleCamera.localRotation = Quaternion.Euler(frontFace ? -localQuaternions[1].eulerAngles : localQuaternions[1].eulerAngles);
 				}
-			} else
+			}
+			else
 				yield return currentObject;
 
 			if ((StrikeCount != initialStrikes || Solved) && !AnarchyMode && !multipleStrikes)
@@ -856,19 +964,22 @@ public class TwitchPlaysID : MonoBehaviour
 			tryCancelSequence = false;
 		}
 
-		if (needQuaternionReset) {
+		if (needQuaternionReset)
+		{
 			focus = TestHarness.MoveCamera(Module);
 			while (focus.MoveNext())
 				yield return focus.Current;
 		}
 
-		if (_zoom) {
+		if (_zoom)
+		{
 			focus = UnZoomCamera();
 			while (focus.MoveNext())
 				yield return focus.Current;
 		}
 
-		if (focused) {
+		if (focused)
+		{
 			focus = TestHarness.MoveCamera(TestHarness.Instance.transform);
 			while (focus.MoveNext())
 				yield return focus.Current;
@@ -878,12 +989,11 @@ public class TwitchPlaysID : MonoBehaviour
 
 	bool needQuaternionReset;
 	private bool frontFace;
-
 	private bool _heldFrontFace { get { return Module.parent.parent.localEulerAngles.z < 90 || Module.parent.parent.localEulerAngles.z > 270; } }
-
 	protected void RotateBombByLocalQuaternion(Quaternion localQuaternion)
 	{
-		if (!needQuaternionReset) {
+		if (!needQuaternionReset)
+		{
 			frontFace = _heldFrontFace;
 			needQuaternionReset = true;
 		}
@@ -906,49 +1016,53 @@ public class TwitchPlaysID : MonoBehaviour
 		// Within the messages, allow variables:
 		// {0} = user’s nickname
 		// {1} = Code (module number)
-		if (message.RegexMatch(out match, @"^senddelayedmessage ([0-9]+(?:\.[0-9])?) (\S(?:\S|\s)*)$") && float.TryParse(match.Groups[1].Value, out messageDelayTime)) {
+		if (message.RegexMatch(out match, @"^senddelayedmessage ([0-9]+(?:\.[0-9])?) (\S(?:\S|\s)*)$") && float.TryParse(match.Groups[1].Value, out messageDelayTime))
+		{
 			Debug.LogFormat("Sending delayed message \"{0}\" in {1} seconds", match.Groups[2].Value, match.Groups[1].Value);
 			return SendToTwitchChatResponse.InstantResponse;
 		}
 
-		if (!message.RegexMatch(out match, @"^(sendtochat|sendtochaterror|strikemessage|antitroll) +(\S(?:\S|\s)*)$"))
-			return SendToTwitchChatResponse.NotHandled;
+		if (!message.RegexMatch(out match, @"^(sendtochat|sendtochaterror|strikemessage|antitroll) +(\S(?:\S|\s)*)$")) return SendToTwitchChatResponse.NotHandled;
 
 		var chatMsg = string.Format(match.Groups[2].Value, userNickName, IDTextMesh.text);
 
-		switch (match.Groups[1].Value) {
-		case "sendtochat":
-			Debug.LogFormat("Sending chat message: {0}", chatMsg);
-			return SendToTwitchChatResponse.InstantResponse;
-		case "antitroll":
-			if (!AntiTrollMode || AnarchyMode) {
-				Debug.Log("Troll command allowed to happen");
+		switch (match.Groups[1].Value)
+		{
+			case "sendtochat":
+				Debug.LogFormat("Sending chat message: {0}", chatMsg);
+				return SendToTwitchChatResponse.InstantResponse;
+			case "antitroll":
+				if (!AntiTrollMode || AnarchyMode)
+				{
+					Debug.Log("Troll command allowed to happen");
+					return SendToTwitchChatResponse.Handled;
+				}
+				Debug.LogFormat("Troll commmand denied, Sending error message to chat: {0}", chatMsg);
+				return SendToTwitchChatResponse.InstantResponse;
+			case "sendtochaterror":
+				Debug.LogFormat("Sending error message to chat: {0}", chatMsg);
+				return SendToTwitchChatResponse.InstantResponse;
+			case "strikemessage":
+				StrikeMessageConflict |= StrikeCount != _beforeStrikeCount && !string.IsNullOrEmpty(StrikeMessage) && !StrikeMessage.Equals(chatMsg);
+				StrikeMessage = chatMsg;
+				if (StrikeMessageConflict)
+				{
+					Debug.LogFormat("Strikes happened on the module, and the message changed as to reason for strike, so nothing will be reported");
+				}
+				else
+				{
+					Debug.LogFormat("Strike message set to {0}", StrikeMessage);
+				}
 				return SendToTwitchChatResponse.Handled;
-			}
-			Debug.LogFormat("Troll commmand denied, Sending error message to chat: {0}", chatMsg);
-			return SendToTwitchChatResponse.InstantResponse;
-		case "sendtochaterror":
-			Debug.LogFormat("Sending error message to chat: {0}", chatMsg);
-			return SendToTwitchChatResponse.InstantResponse;
-		case "strikemessage":
-			StrikeMessageConflict |= StrikeCount != _beforeStrikeCount && !string.IsNullOrEmpty(StrikeMessage) && !StrikeMessage.Equals(chatMsg);
-			StrikeMessage = chatMsg;
-			if (StrikeMessageConflict) {
-				Debug.LogFormat("Strikes happened on the module, and the message changed as to reason for strike, so nothing will be reported");
-			} else {
-				Debug.LogFormat("Strike message set to {0}", StrikeMessage);
-			}
-			return SendToTwitchChatResponse.Handled;
-		default:
-			return SendToTwitchChatResponse.NotHandled;
+			default:
+				return SendToTwitchChatResponse.NotHandled;
 		}
 	}
 
 	protected IEnumerator DelayedModuleBombExplosion(float delay, string chatMessage)
 	{
 		yield return new WaitForSeconds(delay);
-		if (!_delayedExplosionPending)
-			yield break;
+		if (!_delayedExplosionPending) yield break;
 		Debug.LogFormat("Sending the following message to chat: {0}", chatMessage);
 
 		FakeBombInfo.strikes = FakeBombInfo.numStrikes - 1;
@@ -975,18 +1089,22 @@ public static class Canceller
 		ShouldCancel = false;
 	}
 
-	public static bool ShouldCancel {
+	public static bool ShouldCancel
+	{
 		get;
 		private set;
 	}
 
 	public static bool? TryMoveNext(this IEnumerator iEnumerator, out bool forceSolve, string exceptionReason = null)
 	{
-		try {
+		try
+		{
 			forceSolve = false;
 			return iEnumerator.MoveNext();
-		} catch (System.Exception ex) {
-			if (exceptionReason != null)
+		}
+		catch (System.Exception ex)
+		{
+			if(exceptionReason != null)
 				Debug.Log(exceptionReason);
 			Debug.LogException(ex);
 
@@ -1010,13 +1128,13 @@ public class TPCoroutineQueue : MonoBehaviour
 
 	private void Update()
 	{
-		if (!_processingForcedSolve && _forceSolveQueue.Count > 0) {
+		if (!_processingForcedSolve && _forceSolveQueue.Count > 0)
+		{
 			_processingForcedSolve = true;
 			_activeForceSolveCoroutine = StartCoroutine(ProcessForcedSolveCoroutine());
 		}
 
-		if (Processing || _coroutineQueue.Count <= 0)
-			return;
+		if (Processing || _coroutineQueue.Count <= 0) return;
 		Processing = true;
 		_activeCoroutine = StartCoroutine(ProcessQueueCoroutine());
 	}
@@ -1038,7 +1156,8 @@ public class TPCoroutineQueue : MonoBehaviour
 
 	public void StopQueue()
 	{
-		if (_activeCoroutine != null) {
+		if (_activeCoroutine != null)
+		{
 			StopCoroutine(_activeCoroutine);
 			_activeCoroutine = null;
 		}
@@ -1048,7 +1167,8 @@ public class TPCoroutineQueue : MonoBehaviour
 
 	public void StopForcedSolve()
 	{
-		if (_activeForceSolveCoroutine != null) {
+		if (_activeForceSolveCoroutine != null)
+		{
 			StopCoroutine(_activeForceSolveCoroutine);
 			_activeForceSolveCoroutine = null;
 		}
@@ -1059,9 +1179,11 @@ public class TPCoroutineQueue : MonoBehaviour
 	private IEnumerator ProcessQueueCoroutine()
 	{
 
-		while (_coroutineQueue.Count > 0) {
+		while (_coroutineQueue.Count > 0)
+		{
 			IEnumerator coroutine = _coroutineQueue.Dequeue();
-			while (coroutine.MoveNext()) {
+			while (coroutine.MoveNext())
+			{
 				yield return coroutine.Current;
 			}
 		}
@@ -1072,23 +1194,30 @@ public class TPCoroutineQueue : MonoBehaviour
 
 	private IEnumerator ProcessForcedSolveCoroutine()
 	{
-		while (_forceSolveQueue.Count > 0) {
+		while (_forceSolveQueue.Count > 0)
+		{
 			IEnumerator coroutine = _forceSolveQueue.Dequeue();
 			bool result = true;
-			while (result) {
-				try {
+			while (result)
+			{
+				try
+				{
 					result = coroutine.MoveNext();
-				} catch {
+				}
+				catch
+				{
 					result = false;
 				}
-				if (!result)
-					continue;
+				if (!result) continue;
 
-				if (coroutine.Current is bool && ((bool)coroutine.Current)) {
+				if (coroutine.Current is bool && ((bool) coroutine.Current))
+				{
 					_forceSolveQueue.Enqueue(coroutine);
 					yield return null;
 					result = false;
-				} else {
+				}
+				else
+				{
 					yield return coroutine.Current;
 				}
 			}
@@ -1121,11 +1250,13 @@ public class WaitForSecondsWithCancel : CustomYieldInstruction
 		_startingTime = Time.time;
 		_resetCancel = resetCancel;
 		_solver = solver;
-		_startingStrikes = _solver != null ? _solver.StrikeCount : 0;
+		_startingStrikes = _solver != null ?  _solver.StrikeCount : 0;
 	}
 
-	public override bool keepWaiting {
-		get {
+	public override bool keepWaiting
+	{
+		get
+		{
 			if (!Canceller.ShouldCancel && ((!(_solver != null && _solver.Solved) && (_solver != null ? _solver.StrikeCount : 0) == _startingStrikes) || TwitchPlaysID.AnarchyMode))
 				return (Time.time - _startingTime) < _seconds;
 

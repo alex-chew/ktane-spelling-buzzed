@@ -1,5 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 public class SpellingBuzzedModule : MonoBehaviour
@@ -23,6 +26,8 @@ public class SpellingBuzzedModule : MonoBehaviour
 
 	private static int _moduleIdCounter = 1;
 	private int _moduleId;
+    private string displayed;
+    private bool animating;
 
 	void Start()
 	{
@@ -118,6 +123,7 @@ public class SpellingBuzzedModule : MonoBehaviour
 		for (int buttonIndex = 0; buttonIndex < keypadButtons.Length; buttonIndex++) {
 			string letter = LetterForButton(buttonIndex).ToString();
 			keypadButtons[buttonIndex].transform.Find("ButtonText").GetComponent<TextMesh>().text = letter;
+            displayed += letter;
 		}
 	}
 
@@ -174,9 +180,33 @@ public class SpellingBuzzedModule : MonoBehaviour
 	{
 		return string.Format("[Spelling Buzzed #{0}]", _moduleId);
 	}
+#pragma warning disable 414
+    private readonly string TwitchHelpMessage = @"Use !{0} submit DRUNK to submit that word into the module.";
+#pragma warning restore 414
 
-	void Update()
-	{
 
-	}
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        command = command.Trim().ToUpperInvariant();
+        string display = displayText.GetComponent<TextMesh>().text;
+        Match m = Regex.Match(command, @"^SUBMIT\s+([" + displayed + "]+)$"); //Will only allow letters on the module.
+        if (m.Success)
+        {
+            yield return null;
+            if (display.Length != 0 && !m.Groups[1].Value.StartsWith(display))
+            {
+                Debug.Log("clear");
+                resetButton.OnInteract();
+                yield return new WaitForSeconds(0.15f);
+            }
+            display = displayText.GetComponent<TextMesh>().text;
+            foreach (char letter in m.Groups[1].Value.Skip(display.Length))
+            {
+                keypadButtons[displayed.IndexOf(letter)].OnInteract();
+                yield return new WaitForSeconds(0.15f);
+            }
+            submitButton.OnInteract();
+        }
+        yield return null;
+    }
 }
