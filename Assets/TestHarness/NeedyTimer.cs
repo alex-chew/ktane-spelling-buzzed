@@ -8,14 +8,16 @@ public class NeedyTimer : MonoBehaviour
 
 	private Coroutine _waitAndReset;
 
-	public void Start()
+	public void Awake()
 	{
 		State = NeedyState.AwaitingActivation;
+		_newState = NeedyState.AwaitingActivation;
 	}
 
 	public void StartTimer()
 	{
-		if (!gameObject.activeInHierarchy || IsRunning) return;
+		if (!gameObject.activeInHierarchy || IsStoppedPermanently || IsRunning) return;
+		_newState = NeedyState.Running;
 
 		Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.NeedyActivated, transform);
 		TimeRemaining = ParentComponent != null ? ParentComponent.CountdownTime : TotalTime;
@@ -25,18 +27,22 @@ public class NeedyTimer : MonoBehaviour
 
 		UpdateSevenSegText();
 
-		State = NeedyState.Running;
+		if (_waitAndReset == null) return;
+
+		StopCoroutine(_waitAndReset);
+		_waitAndReset = null;
 	}
 
 	public void StopTimer(NeedyState newState = NeedyState.Cooldown)
 	{
 		Display.On = false;
 		IsWarning = false;
-
-		State = !gameObject.activeInHierarchy
-			? NeedyState.Terminated
+		
+		_newState = !gameObject.activeInHierarchy 
+			? NeedyState.Terminated 
 			: newState;
-		if (State == NeedyState.Cooldown) _waitAndReset = StartCoroutine(WaitAndReset());
+
+		UpdateSevenSegText();
 	}
 
 	public float GetTimeRemaining()
@@ -57,6 +63,47 @@ public class NeedyTimer : MonoBehaviour
 
 	private void Update()
 	{
+		if (IsStoppedPermanently) return;
+		if (State != _newState)
+		{
+			if (_waitAndReset != null)
+			{
+				StopCoroutine(_waitAndReset);
+				_waitAndReset = null;
+			}
+
+			switch (_newState)
+			{
+				case NeedyState.InitialSetup:
+					_newState = NeedyState.AwaitingActivation;
+					goto default;
+
+				case NeedyState.AwaitingActivation:
+					break;
+
+				case NeedyState.Running:
+					if (ParentComponent.OnNeedyActivation != null)
+						ParentComponent.OnNeedyActivation();
+					break;
+
+				case NeedyState.Cooldown:
+					_waitAndReset = StartCoroutine(WaitAndReset());
+					goto default;
+
+				
+				case NeedyState.Terminated:
+				case NeedyState.BombComplete:
+				default:
+					if (ParentComponent.OnNeedyDeactivation != null)
+						ParentComponent.OnNeedyDeactivation();
+					break;
+			}
+
+			State = _newState;
+			UpdateSevenSegText();
+			Debug.LogFormat("!IsRunning = {0}, TimeRemaining <= 0f = {1}", !IsRunning, TimeRemaining <= 0f);
+		}
+
 		if (!IsRunning || TimeRemaining <= 0f) return;
 
 		TimeRemaining -= Time.deltaTime;
@@ -84,7 +131,7 @@ public class NeedyTimer : MonoBehaviour
 
 	public bool IsRunning
 	{
-		get { return State == NeedyState.Running; }
+		get { return State == NeedyState.Running || _newState == NeedyState.Running; }
 	}
 
 	public bool IsStoppedPermanently
@@ -116,29 +163,8 @@ public class NeedyTimer : MonoBehaviour
 
 	private KMAudio.KMAudioRef _warningRef;
 	private bool _isWarning;
-	public NeedyState State
-	{
-		get { return state; }
-		set {
-			state = value;
-			if (_waitAndReset != null)
-			{
-				StopCoroutine(_waitAndReset);
-				_waitAndReset = null;
-			}
-			if (value == NeedyState.Running)
-			{
-				if (ParentComponent.OnNeedyActivation != null)
-					ParentComponent.OnNeedyActivation();
-			}
-			else if (value == NeedyState.Terminated || value == NeedyState.BombComplete)
-			{
-				if (ParentComponent.OnNeedyDeactivation != null)
-					ParentComponent.OnNeedyDeactivation();
-			}
-		}
-	}
-	private NeedyState state;
+	public NeedyState State { get; private set; }
+	private NeedyState _newState;
 
 	public enum NeedyState
 	{

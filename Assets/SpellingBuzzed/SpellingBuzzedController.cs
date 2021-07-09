@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -148,7 +149,7 @@ public class SpellingBuzzedController
 
 	public SubmitResult SubmitInput()
 	{
-		if (state != State.IN_STAGE)
+        if (state != State.IN_STAGE)
 			return SubmitResult.INVALID;
 
 		string inputString = inputChars.ToString();
@@ -172,7 +173,7 @@ public class SpellingBuzzedController
 				logPrefix, submission);
 			return SubmitResult.FAILURE;
 		}
-		if (!validWords.Contains(submission)) {
+		if (!validWords.ToArray().Contains(submission)) {
 			Debug.LogFormat("{0} Submission '{1}' is not a valid word. Strike.",
 				logPrefix, submission);
 			return SubmitResult.FAILURE;
@@ -225,7 +226,7 @@ public class SpellingBuzzedController
 		if (validWords != null)
 			return;
 
-		validWords = new HashSet<string>(validWordsText.text.Split(new char[] { '\n' }).AsEnumerable());
+		validWords = new HashSet<string>(validWordsText.text.Split(new char[] { '\n' }).Select(x => x.Trim()).AsEnumerable());
 		validWords.Remove("");
 		Debug.LogFormat("{0} Loaded {1} valid words.", logPrefix, validWords.Count);
 	}
